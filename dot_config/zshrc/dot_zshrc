@@ -1,0 +1,89 @@
+#!/usr/bin/env zsh
+
+setopt prompt_subst
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+# Enable calling make to determine targets
+zstyle ':completion:*:*:make:*:targets' call-command true
+# Prioritize targets in completion list
+zstyle ':completion:*:*:make:*' tag-order 'targets'
+autoload bashcompinit && bashcompinit
+autoload -Uz compinit
+compinit
+
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+bindkey '^w' autosuggest-execute
+bindkey '^e' autosuggest-accept
+bindkey '^u' autosuggest-toggle
+bindkey '^L' vi-forward-word
+bindkey '^k' up-line-or-search
+bindkey '^j' down-line-or-search
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+
+export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+eval "$(starship init zsh)"
+
+# ---
+# We do this before the following so that all the paths work.
+for file in {aliases,functions,path,podmanfunc,extra,exports}; do
+	if [[ -r "$ZDOTDIR/$file" ]] && [[ -f "$ZDOTDIR/$file" ]]; then
+		# shellcheck source=/dev/null
+		source "$ZDOTDIR/$file"
+	fi
+done
+unset file
+
+# Start the gpg-agent if not already running
+if ! pgrep -x -u "${USER}" gpg-agent >/dev/null 2>&1; then
+	gpg-connect-agent /bye >/dev/null 2>&1
+fi
+gpg-connect-agent updatestartuptty /bye >/dev/null
+
+# use a tty for gpg
+# solves error: "gpg: signing failed: Inappropriate ioctl for device"
+GPG_TTY=$(tty)
+export GPG_TTY
+# Set SSH to use gpg-agent
+unset SSH_AGENT_PID
+if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
+	if [[ -z "$SSH_AUTH_SOCK" ]] || [[ "$SSH_AUTH_SOCK" == *"apple.launchd"* ]]; then
+		SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+		export SSH_AUTH_SOCK
+	fi
+fi
+
+# Case-insensitive globbing (used in pathname expansion)
+setopt nocaseglob
+
+# Append to the Bash history file, rather than overwriting it
+setopt APPEND_HISTORY
+
+# Autocorrect typos in path names when using `cd`
+setopt correct
+
+setopt autocd
+
+# Add tab completion for SSH hostnames based on ~/.ssh/config
+# ignoring wildcards
+[[ -e "$HOME/.ssh/config" ]] && complete -o "default" \
+	-o "nospace" \
+	-W "$(grep "^Host" ~/.ssh/config | \
+	grep -v "[?*]" | cut -d " " -f2 | \
+	tr ' ' '\n')" scp sftp ssh
+
+# source crc zsh completion
+if hash crc 2>/dev/null; then
+	# shellcheck source=/dev/null
+	source <(crc completion zsh)
+fi
+
+### FZF ###
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+if hash fzf 2>/dev/null; then
+	# shellcheck source=/dev/null
+	eval "$(fzf --zsh)"
+fi
+
+eval "$(zoxide init zsh)"
+eval "$(atuin init zsh)"
+eval "$(direnv hook zsh)"

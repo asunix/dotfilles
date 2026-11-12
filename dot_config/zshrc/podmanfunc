@@ -1,0 +1,48 @@
+#!/usr/bin/env zsh
+
+# shellcheck shell=bash
+
+PLATFORM=$(/usr/bin/uname)
+export PLATFORM
+
+#
+# Helper Functions
+#
+dcleanup(){
+	local containers
+	mapfile -t containers < <(podman ps -aq 2>/dev/null)
+	podman rm "${containers[@]}" 2>/dev/null
+	local volumes
+	mapfile -t volumes < <(podman ps --filter status=exited -q 2>/dev/null)
+	podman rm -v "${volumes[@]}" 2>/dev/null
+	local images
+	mapfile -t images < <(podman images --filter dangling=true -q 2>/dev/null)
+	podman rmi "${images[@]}" 2>/dev/null
+}
+
+del_stopped(){
+	local name=$1
+	local state
+	state=$(podman inspect --format "{{.State.Running}}" "$name" 2>/dev/null)
+
+	if [[ "$state" == "false" ]]; then
+		podman rm "$name"
+	fi
+}
+
+rmctr(){
+	# shellcheck disable=SC2068
+	podman rm -f $@ 2>/dev/null || true
+}
+
+relies_on(){
+	for container in "$@"; do
+		local state
+		state=$(podman inspect --format "{{.State.Running}}" "$container" 2>/dev/null)
+
+		if [[ "$state" == "false" ]] || [[ "$state" == "" ]]; then
+			echo "$container is not running, starting it for you."
+			$container
+		fi
+	done
+}

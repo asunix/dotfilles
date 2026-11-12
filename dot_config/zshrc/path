@@ -1,0 +1,49 @@
+#!/usr/bin/env zsh
+
+# shellcheck shell=bash
+
+PLATFORM=$(/usr/bin/uname)
+export PLATFORM
+
+# go path
+export GOPATH="${HOME}/.go"
+
+HOMEBREW_PREFIX="$(brew --prefix)";
+export HOMEBREW_PREFIX
+
+export HOMEBREW_CELLAR="${HOMEBREW_PREFIX}/Cellar";
+export HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}";
+export MANPATH="${HOMEBREW_PREFIX}/share/man${MANPATH+:$MANPATH}:";
+export INFOPATH="${HOMEBREW_PREFIX}/share/info:${INFOPATH:-}";
+export PATH="${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin${PATH+:$PATH}"
+
+# add gnubin for mac
+export PATH="${HOMEBREW_PREFIX}/opt/gnu-sed/libexec/gnubin:${PATH}"
+	
+# add gnu getopt
+export PATH="${HOMEBREW_PREFIX}/opt/gnu-getopt/bin:${PATH}"
+
+# update path for gnu coreutils, make & find on darwin
+export PATH=${HOMEBREW_PREFIX}/opt/coreutils/libexec/gnubin:${PATH}
+export MANPATH=${HOMEBREW_PREFIX}/opt/coreutils/libexec/gnuman:${MANPATH}
+export PATH=${HOMEBREW_PREFIX}/opt/make/libexec/gnubin:${PATH}
+export MANPATH=${HOMEBREW_PREFIX}/opt/make/libexec/gnuman:${MANPATH}
+export PATH=${HOMEBREW_PREFIX}/opt/findutils/libexec/gnubin:${PATH}
+export MANPATH=${HOMEBREW_PREFIX}/opt/findutils/libexec/gnuman:${MANPATH}
+	
+# add go path
+export PATH="${GOPATH}/bin:${PATH}"
+
+export PATH="$HOME/.local/bin:${PATH}"
+
+# update cdpath
+export CDPATH=${CDPATH}:${GOPATH}/src/github.com:${GOPATH}/src/golang.org:${GOPATH}/src
+
+if type brew &>/dev/null
+then
+	FPATH="${HOMEBREW_PREFIX}/share/zsh/site-functions:${FPATH}"
+	FPATH="${HOMEBREW_PREFIX}/share/zsh-completions:${FPATH}"
+	export FPATH
+	autoload -Uz compinit
+	compinit
+fi

@@ -1,0 +1,68 @@
+#!/usr/bin/env zsh
+
+# shellcheck shell=bash
+
+# Set zsh as our shell, idk why anyone would use something else ;)
+shell="$(which zsh)";
+export SHELL="$shell";
+
+# Make vim the default editor
+export EDITOR=/usr/bin/vim;
+
+export TERM=xterm-256color
+
+# Larger bash history (allow 32³ entries; default is 500)
+HISTFILE=~/.zsh_history
+HISTSIZE=50000000
+# shellcheck disable=SC2034
+SAVEHIST=50000000
+
+setopt SHARE_HISTORY
+setopt EXTENDED_HISTORY
+
+# Remove duplicates from the history list immediately
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_EXPIRE_DUPS_FIRST
+
+# Skip commands that are duplicates of the immediate previous command
+setopt HIST_IGNORE_DUPS
+
+# Do not write duplicate entries to the history file on disk
+setopt HIST_SAVE_NO_DUPS
+
+# Ignore commands starting with a space (useful for secrets)
+setopt HIST_IGNORE_SPACE   
+
+# Make some commands not show up in history
+export HISTORY_IGNORE="( *:ls|cd|cd -:pwd|exit|date:* --help:* -h|pony|pony add *:pony update *:pony save *:pony ls|pony ls *)"
+
+# Prefer US English and use UTF-8
+export LANG="en_US.UTF-8";
+export LC_ALL="en_US.UTF-8";
+
+# Don't clear the screen after quitting a manual page
+export MANPAGER="less -X";
+
+# hidpi for gtk apps
+export GDK_SCALE=1.5
+export GDK_DPI_SCALE=0.5
+export QT_DEVICE_PIXEL_RATIO=1.5
+
+# turn on go vendoring experiment
+export GO15VENDOREXPERIMENT=1
+
+# Restart the gpg agent.
+# shellcheck disable=SC2046
+#kill -9 $(pidof scdaemon) >/dev/null 2>&1 || true
+# shellcheck disable=SC2046
+#kill -9 $(pidof gpg-agent) >/dev/null 2>&1 || true
+#gpg-connect-agent /bye >/dev/null 2>&1 || true
+#gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1 || true
+
+# if it's an ssh session export GPG_TTY
+if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
+	GPG_TTY=$(tty)
+	export GPG_TTY
+	SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+	export SSH_AUTH_SOCK
+fi
